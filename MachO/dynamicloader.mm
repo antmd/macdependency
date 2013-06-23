@@ -2,7 +2,6 @@
 #include "machofile.h"
 #include "machoarchitecture.h"
 
-#include <boost/filesystem.hpp>
 #include <pwd.h>
 #include <stdlib.h>
 #include <sstream>
@@ -299,8 +298,6 @@ string DynamicLoader::getExistingPathname(const string& file, const string& dire
 
 string DynamicLoader::getExistingPathname(const string& name, const string& workingPath, bool withSuffix) const {
 	
-	boost::filesystem::path path;
-	
 	// complete path
 	string usedName = name;
 	bool tryAgainWithoutSuffix = false;
@@ -318,12 +315,14 @@ string DynamicLoader::getExistingPathname(const string& name, const string& work
 		tryAgainWithoutSuffix = true;
     } 
 	
-	path = usedName;
-	// complete path (with working directory)
-	path = boost::filesystem::complete(path, workingPath);
-	
-	if (boost::filesystem::exists(path)) {
-		return path.string();
+	NSString* path = [ NSString stringWithCString:usedName.c_str() encoding:NSUTF8StringEncoding] ;
+    if (![path isAbsolutePath]) {
+        path = [ NSString stringWithFormat:@"%@/%s",path,workingPath.c_str()];
+    }
+    
+    NSFileManager* fileManager = [ NSFileManager defaultManager ];
+	if ([ fileManager fileExistsAtPath:path ]) {
+		return [ path cStringUsingEncoding:NSUTF8StringEncoding ];
 	} else {
 		// try without suffix
 		if (tryAgainWithoutSuffix) {

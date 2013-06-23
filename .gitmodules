@@ -1,0 +1,3 @@
+[submodule "ThirdParty/pstreams"]
+	path = ThirdParty/pstreams
+	url = git://git.code.sf.net/p/pstreams/code

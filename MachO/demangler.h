@@ -2,7 +2,8 @@
 #define DEMANGLER_H
 
 #include "macho_global.h"
-#include <boost/process.hpp>
+#include <pstreams/pstream.h>
+#include <memory>
 
 class Demangler
 {
@@ -12,9 +13,7 @@ public:
 
     string demangleName(const string& name);
 private:
-	boost::process::child* child;
-	boost::process::pistream* stdout; 
-	boost::process::postream* stdin;
+    std::unique_ptr<redi::pstream> child;
 	bool isRunning;
 	
 	void init();

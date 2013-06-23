@@ -71,8 +71,8 @@ void MachOFile::readBytes(char* result, size_t size) {
 // convert from big endian or little endian to native format (Intel=little endian) and return as unsigned int (32bit)
 unsigned int MachOFile::convertByteOrder(char* data, bool isBigEndian, unsigned int numberOfBytes) {
 
-    assert(numberOfBytes> 0);
-    assert(numberOfBytes <= 4); // max 4 byte
+    //assert(numberOfBytes> 0);
+    //assert(numberOfBytes <= 4); // max 4 byte
 
     unsigned int result = 0;
 

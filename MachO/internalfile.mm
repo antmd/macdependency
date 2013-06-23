@@ -1,15 +1,17 @@
 #include "internalfile.h"
 #include "machoexception.h"
 #include <sstream>
+#import <Foundation/Foundation.h>
 
-using namespace boost::filesystem;
 
 // use reference counting to reuse files for all used architectures
+/* static */
 InternalFile* InternalFile::create(InternalFile* file) {
     file->counter++;
     return file;
 }
 
+/* static */
 InternalFile* InternalFile::create(const string& filename) {
 	return new InternalFile(filename);
 }
@@ -22,11 +24,13 @@ void InternalFile::release() {
 }
 
 InternalFile::InternalFile(const string& filename) :
-	filename(filename), counter(1)
+	counter(1)
 {
+    _filename = [ NSString stringWithCString:filename.c_str() encoding:NSUTF8StringEncoding ];
 	// open file handle
-	file.open(this->filename, ios_base::in|ios_base::binary);
-	if (file.fail()) {
+    NSError* error = nil;
+    file = [ NSFileHandle fileHandleForReadingFromURL:[ NSURL fileURLWithPath:_filename ] error:&error ];
+	if (error !=nil) {
 		ostringstream error;
 		error << "Couldn't open file '" << filename << "'.";
 		throw MachOException(error.str());
@@ -35,63 +39,52 @@ InternalFile::InternalFile(const string& filename) :
 
 // destructor is private since we use reference counting mechanism
 InternalFile::~InternalFile()  {
-    file.close();
+    [ file closeFile ];
 }
 
 string InternalFile::getPath() const {
-	return filename.parent_path().string();
+	return [[ _filename stringByDeletingLastPathComponent ] cStringUsingEncoding:NSUTF8StringEncoding];
 
 }
 
 /* returns whole filename (including path)*/
 string InternalFile::getName() const {
 	
-	/* unfortunately canonized is not available in newer versions of boost filesystem.
-	 For the reasons see the filsystem proposal at http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2005/n1889.html.
-	 As an alternative I use realpath but I don't know if it handles unicode strings also.
-	 */
-	
 	// try to canonicalize path
-	char* resolvedName = realpath(filename.string().c_str(), NULL);
-	if (!resolvedName)
-		return filename.string();
-	string resolvedFileName(resolvedName);
-	free(resolvedName);
-	return resolvedFileName;
+	return [_filename cStringUsingEncoding:NSUTF8StringEncoding];
 }
 
 /* returns filename without path */
 string InternalFile::getTitle() const {
-	return filename.filename().string();
+	return [[ _filename lastPathComponent ] cStringUsingEncoding:NSUTF8StringEncoding];
 }
 
 unsigned long long InternalFile::getSize() const {
-	return file_size(filename);
+    NSFileManager *man = [NSFileManager defaultManager];
+    NSDictionary *attrs = [man attributesOfItemAtPath: _filename error: NULL];
+    UInt32 result = [attrs[NSFileSize] unsignedIntegerValue];
+	return result;
 }
 
 bool InternalFile::seek(long long int position) {
-	file.seekg(position, ios_base::beg);
-	if (file.fail()) {
-		file.clear();
-		return false;
-	}
+    [ file seekToFileOffset:position ];
 	return true;
 }
 
 streamsize InternalFile::read(char* buffer, streamsize size) {
-	file.read(buffer, size);
-	if (file.fail()) {
-		file.clear();
-		return file.gcount();
-	}
-	// TODO: handle badbit
-	return size;
+    NSData* data = [ file readDataOfLength:size ];
+    streamsize gcount = [ data length ];
+    memcpy(buffer, [data bytes], gcount );
+    return gcount;
 }
 
 long long int InternalFile::getPosition() {
-	return file.tellg();
+	return [ file offsetInFile ];
  }
 
 time_t InternalFile::getLastModificationTime() const {
-	return last_write_time(filename);
+    NSFileManager *man = [NSFileManager defaultManager];
+    NSDictionary *attrs = [man attributesOfItemAtPath: _filename error: NULL];
+    NSDate* result = attrs[NSFileModificationDate];
+	return [result timeIntervalSince1970 ];
 }

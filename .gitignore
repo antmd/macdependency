@@ -11,3 +11,8 @@
 *.lai
 *.la
 *.a
+
+.DS_Store
+xcshareddata
+/MacDependency/MacDependency.xcodeproj/project.xcworkspace/xcuserdata/ant.xcuserdatad/UserInterfaceState.xcuserstate
+/MacDependency/MacDependency.xcodeproj/xcuserdata/ant.xcuserdatad/xcdebugger/

@@ -2,8 +2,15 @@
 #define INTERNALFILE_H
 
 #include "macho_global.h"
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
+#ifdef __OBJC__
+#define OBJC_CLASS(name) @class name
+#else
+#define OBJC_CLASS(name) typedef struct objc_object name
+#endif
+typedef ptrdiff_t streamsize;
+
+OBJC_CLASS(NSString);
+OBJC_CLASS(NSFileHandle);
 
 class InternalFile
 {
@@ -26,8 +33,8 @@ private:
     unsigned int counter;
     virtual ~InternalFile();
     InternalFile(const string& filename);
-	boost::filesystem::ifstream file;
-	boost::filesystem::path filename;
+    NSString* _filename;
+    NSFileHandle* file;
 };
 
 #endif // INTERNALFILE_H
